@@ -25,8 +25,6 @@ public class WhatsAppScheduler {
 
         // Fetch users from DB if needed
         List<UserRoomInfo> users = roomService.getUsers();
-        String phone = "353871234567";
-        String name = "John";
         UserRoomInfo userRoomInfo = users.stream().filter(u->u.getBinStatus().equalsIgnoreCase("TRUE")).findFirst().orElse(new UserRoomInfo());
         whatsAppService.sendUtilityTemplate(userRoomInfo.getPhoneNumber(), userRoomInfo.getUsername());
     }

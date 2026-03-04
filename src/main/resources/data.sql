@@ -18,3 +18,11 @@ VALUES
     ('Atharva', 'Atharva123', 'charlie@example.com','+91 9503443228'),
     ('Krupa', 'Krupa25', 'charlie@example.com','+91 9742561999'),
     ('Varsha', 'Varsha22', 'charlie@example.com','+91 9880623282');
+
+
+91865537642
+919503443228
+919742561999
+919880623282
+918828173732
+918898346696
