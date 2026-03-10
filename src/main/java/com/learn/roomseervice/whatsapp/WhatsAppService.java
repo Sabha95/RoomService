@@ -23,15 +23,29 @@ public class WhatsAppService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         //"recipient_type": "individual",
         String body = """
-        {
-          "messaging_product": "whatsapp",
-          "to": "%s",
-          "type": "template",
-          "template": {
-            "name": "bin_status2",
-            "language": { "code": "en_US" }
-            }
-        }
+                {
+                           "messaging_product": "whatsapp",
+                           "to": "%s",
+                           "type": "template",
+                           "template": {
+                               "name": "bin_status2",
+                               "language": {
+                                 "code": "en_US"
+                               },
+                               "components": [
+                                 {
+                                   "type": "header",
+                                   "parameters": [
+                                     {
+                                       "type": "text",
+                                        "parameter_name": "roommate_name",
+                                       "text": "%s"
+                                     }
+                                   ]
+                                 }
+                               ]
+                           }
+                         }
         """.formatted(to, name);
 
         HttpEntity<String> request = new HttpEntity<>(body, headers);
