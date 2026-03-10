@@ -11,8 +11,8 @@
     <groupId>com.learn</groupId>
     <artifactId>RoomService</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>RoomSeervice</name>
-    <description>RoomSeervice</description>
+    <name>RoomService</name>
+    <description>RoomService</description>
     <url/>
     <licenses>
         <license/>
