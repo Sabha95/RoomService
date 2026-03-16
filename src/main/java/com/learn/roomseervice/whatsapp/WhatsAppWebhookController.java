@@ -1,13 +1,15 @@
 package com.learn.roomseervice.whatsapp;
 
 import com.learn.roomseervice.RoomService;
+import com.learn.roomseervice.dto.Profile;
 import com.learn.roomseervice.dto.UserRoomInfo;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 
@@ -39,25 +41,47 @@ public class WhatsAppWebhookController {
     }
 
     // Receive messages
-    @PostMapping
-    public ResponseEntity<Void> receive(@RequestBody Map<String, Object> payload) {
+    @PostMapping(consumes = "application/json")
+    public ResponseEntity receive(@RequestBody Map<String, Object> payload) {
+
+         record Change(com.learn.roomseervice.dto.Value value, String field){ }
+         record Entry(String id,List<Change> changes){ }
+         record Root(String object,List<Entry> entry){ }
 
         System.out.println("Incoming webhook:");
         System.out.println(payload);
-        String phoneNumber="";
-        String binStatus="";
+        ObjectMapper mapper = new ObjectMapper();
+
+        Root obj = mapper.convertValue(payload, Root.class);
+
+        String phoneNumber= obj.entry.get(0).changes().get(0).value().getContacts().get(0).wa_id;
+        String name = obj.entry.get(0).changes().get(0).value().getContacts().get(0).profile.getName();
+        String binStatus= obj.entry.get(0).changes().get(0).value().getMessages().get(0).getButton().text;
         Boolean isNext=false;
+        if(!binStatus.equalsIgnoreCase("yes")){
+           return ResponseEntity.status(HttpStatus.OK).body("Resource created");
+        }
         List<UserRoomInfo> users = roomService.getUsers();
         UserRoomInfo userResponse= users.stream().filter(u->u.getPhoneNumber().equals(phoneNumber))
                 .findFirst().get();
+        UserRoomInfo nextRoomMember = new UserRoomInfo();
+        //Scenario 1 its the first turn out of 2 of a particular room.
         if(userResponse.getBinCount() == 0){
             UserRoomInfo secondRoommate = users.stream().filter(u-> u.getRoomNumber().equals(userResponse.getRoomNumber()) && u.getBinCount() == 0 ).skip(1).findFirst().get();
             roomService.updateBinStatus(binStatus, List.of(phoneNumber,secondRoommate.getPhoneNumber()),1);
             roomService.updateBinStatusWithoutBinCount("TRUE",List.of(secondRoommate.getPhoneNumber()));
         }else{
-            UserRoomInfo nextRoomMember = users.stream().filter(u->u.getPhoneNumber().equalsIgnoreCase(userResponse.getPhoneNumber())).skip(2).findFirst().get();
+            if(userResponse.getRoomNumber() == 3 ){
+                long newRoomNumber = 1;
+                 nextRoomMember = users.stream().filter(u-> u.getRoomNumber().equals(newRoomNumber)).findFirst().get();
+            }else{
+                long newRoomNumber = userResponse.getRoomNumber()+1l;
+                 nextRoomMember = users.stream().filter(u-> u.getRoomNumber().equals(newRoomNumber)).findFirst().get();
+            }
+            //UserRoomInfo nextRoomMember = users.stream().filter(u->u.getPhoneNumber().equalsIgnoreCase(userResponse.getPhoneNumber())).skip(2).findFirst().get();
            // UserRoomInfo nextRoom2ndMember = users.stream().filter(u->u.getRoomNumber().equalsIgnoreCase(nextRoomMember.getRoomNumber())).skip(1).findFirst().get();
-            roomService.updateBinStatus(binStatus,List.of(userResponse.getPhoneNumber()),0);
+            UserRoomInfo userResponseRoommate =  users.stream().filter(u-> u.getRoomNumber().equals(userResponse.getRoomNumber()) && !u.getUsername().equalsIgnoreCase(userResponse.getUsername())).findFirst().get();
+            roomService.updateBinStatus(binStatus,List.of(userResponse.getPhoneNumber(),userResponseRoommate.getPhoneNumber()),0);
             roomService.updateBinStatusWithoutBinCount("TRUE", List.of(nextRoomMember.getPhoneNumber()));
         }
         //Two scenarios
@@ -72,5 +96,6 @@ public class WhatsAppWebhookController {
         //2. They say its not full. -> Update the count for not empty, once done for the day then do not
 
         return ResponseEntity.ok().build();
+
     }
 }

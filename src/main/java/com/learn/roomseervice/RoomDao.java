@@ -8,16 +8,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-
+@Repository
 public interface RoomDao  extends JpaRepository<Rooms, Long> {
 
     @Modifying
     @Query("""
 
-            update Rooms r set r.binStatus = :binStatus, r.binCount = 1 where r.userId = (
+            update Rooms r set r.binStatus = :binStatus, r.binCount = :binCount where r.userId IN (
            select um.id from UserManagement um where um.phoneNumber IN (:phoneNumber
             ))
           """)
@@ -28,7 +29,7 @@ public interface RoomDao  extends JpaRepository<Rooms, Long> {
     @Modifying
     @Query("""
 
-            update Rooms r set r.binStatus = :binStatus where r.userId = (
+            update Rooms r set r.binStatus = :binStatus where r.userId IN (
            select um.id from UserManagement um where um.phoneNumber IN (:phoneNumber
             ))
           """)
