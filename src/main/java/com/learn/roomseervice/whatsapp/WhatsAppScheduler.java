@@ -20,7 +20,8 @@ public class WhatsAppScheduler {
         this.roomService = roomService;
     }
 
-    @Scheduled(cron = "0 0 9 */2 * *") // every 2 days at 9:00 AM
+   // @Scheduled(cron = "0 * * * * *")
+    //@Scheduled(cron = "0 0 9 */2 * *") // every 2 days at 9:00 AM
     public void sendBinReminder() {
 
         // Fetch users from DB if needed
