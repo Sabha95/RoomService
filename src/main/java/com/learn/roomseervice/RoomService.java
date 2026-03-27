@@ -10,7 +10,7 @@ public interface RoomService {
 
     void updateBinStatusWithoutBinCount(String binStatus, List<String> phoneNumber);
 
-    List<UserRoomInfo> whoTurnsIsNext();
-
     List<UserRoomInfo> getUsers();
+
+    void whoTurnsIsNext(String phoneNumber, String binStatus);
 }

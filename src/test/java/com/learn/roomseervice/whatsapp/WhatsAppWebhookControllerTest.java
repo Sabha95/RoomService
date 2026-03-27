@@ -3,6 +3,8 @@ package com.learn.roomseervice.whatsapp;
 import com.learn.roomseervice.RoomDao;
 import com.learn.roomseervice.RoomService;
 import com.learn.roomseervice.RoomServiceImpl;
+import com.learn.roomseervice.dto.UserManagement;
+import com.learn.roomseervice.dto.UserRoomInfo;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,10 +22,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,35 +37,46 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class WhatsAppWebhookControllerTest {
 
+    List<Map<String, Object>> testData =  new ArrayList<>();
+    List<UserRoomInfo> userRoomDetailsList =  new ArrayList<>();;
 
-    @Autowired
-    RoomDao roomDao;
+    @BeforeEach
+    public void setup(){
+        roomDao.deleteAll();
+        testData = loadTestData();
+    }
 
-    @InjectMocks
-    RoomServiceImpl roomService;
-
-    @Autowired
-    MockMvc mockMvc;
-
-//    @BeforeEach
-//    void setup() {
-//        roomService = new RoomServiceImpl(roomRepository);
-//    }
+    private List<Map<String, Object>> loadTestData() {
+        List<UserManagement> users = new ArrayList<>();
 
 
-    @Transactional
-    @Test
-    public void testReceiveWebhookAPI() throws Exception {
-        Map<String, Object> map = new HashMap<>();
 
+        userRoomDetailsList.add(new UserRoomInfo(1L, "Bhakti", "918828173732", 1L, 0, "FALSE", "FALSE"));
+        userRoomDetailsList.add(new UserRoomInfo(6L, "Varsha", "919880623282", 3L, 1, "FALSE", "TRUE"));
+        userRoomDetailsList.add(new UserRoomInfo(5L, "Krupa", "919742561999", 3L, 0, "FALSE", "FALSE"));
+        userRoomDetailsList.add(new UserRoomInfo(2L, "Asmita", "918898346696", 1L, 0, "FALSE", "FALSE"));
+        userRoomDetailsList.add(new UserRoomInfo(3L, "Shreyash", "918655537642", 2L, 0, "FALSE", "FALSE"));
+        userRoomDetailsList.add(new UserRoomInfo(4L, "Athrav", "919503443228", 2L, 0, "FALSE", "FALSE"));
+
+        List<Map<String, Object>> roomInfoList = new ArrayList<>();
+        for(UserRoomInfo userRoomInfo : userRoomDetailsList){
+
+
+        }
+
+        return roomInfoList;
+    }
+
+    Map<String,Object> getRequest( UserRoomInfo userRoomInfo){
+        Map map = new HashMap<>();
         map.put("object", "whatsapp_business_account");
 
         Map<String, Object> profile = new HashMap<>();
-        profile.put("name", "Bhakti");
+        profile.put("name",userRoomInfo.getUsername());
 
         Map<String, Object> contact = new HashMap<>();
         contact.put("profile", profile);
-        contact.put("wa_id", "918828173732");
+        contact.put("wa_id", userRoomInfo.getPhoneNumber());
 
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("display_phone_number", "XXXX");
@@ -116,13 +126,44 @@ public class WhatsAppWebhookControllerTest {
 
         map.put("entry", entry);
 
+       // roomInfoList.add(map);
+        return map;
+    }
+
+    @Autowired
+    RoomDao roomDao;
+
+    @InjectMocks
+    RoomServiceImpl roomService;
+
+    @Autowired
+    MockMvc mockMvc;
+
+//    @BeforeEach
+//    void setup() {
+//        roomService = new RoomServiceImpl(roomRepository);
+//    }
+
+
+    @Transactional
+    @Test
+    public void testReceiveWebhookAPI() throws Exception {
+
+        UserRoomInfo userRoomInfo = userRoomDetailsList.stream().filter(user -> user.getBinStatus().equalsIgnoreCase("TRUE")).findFirst().orElse(new UserRoomInfo());
+
         ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(map);
+        String json = mapper.writeValueAsString(getRequest(userRoomInfo));
 
         mockMvc.perform(post("/webhook")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk());
 
+        Long newRoomNumber = userRoomInfo.getRoomNumber()== 3 ? 1L: userRoomInfo.getRoomNumber();
+
+        UserRoomInfo expectedUserInfo = userRoomDetailsList.stream().filter(user-> Objects.equals(user.getRoomNumber(), newRoomNumber)).findFirst().orElse(new UserRoomInfo());
+        UserRoomInfo actualUserInfo =
     }
+
+
 }
