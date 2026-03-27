@@ -68,7 +68,7 @@ public class WhatsAppWebhookController {
                 .findFirst().get();
         String name = userResponse.getUsername();
         if(name.equalsIgnoreCase("Atharva") && userResponse.getBinCount() == 0){
-            UserRoomInfo secondRoommate = users.stream().filter(u-> u.getRoomNumber().equals(userResponse.getRoomNumber()) && u.getBinCount() == 0 ).skip(1).findFirst().get();
+          //  UserRoomInfo secondRoommate = users.stream().filter(u-> u.getRoomNumber().equals(userResponse.getRoomNumber()) && u.getBinCount() == 0 ).skip(1).findFirst().get();
             roomService.updateBinStatus(binStatus, List.of(phoneNumber),1);
             roomService.updateBinStatusWithoutBinCount("TRUE",List.of(phoneNumber));
         }else if(name.equalsIgnoreCase("Atharva") && userResponse.getBinCount() == 1){
