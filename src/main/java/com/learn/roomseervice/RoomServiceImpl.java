@@ -36,12 +36,7 @@ public class RoomServiceImpl implements RoomService {
     @Override
     public void updateBinStatusWithoutBinCount(String binStatus, List<String> phoneNumber) {
         roomDao.updateBinStatusWithoutBinCount(binStatus, phoneNumber);
-        findNextforBinDuties("");
     }
-    void findNextforBinDuties(String roomMateName){
-
-    }
-
 
 
    public List<UserRoomInfo> whoTurnsIsNext(){
@@ -94,9 +89,6 @@ public class RoomServiceImpl implements RoomService {
         }else{
             logicForRestOfRoommates(userResponse ,users, binStatus, phoneNumber,roomNumber);
         }
-
-//
-
     }
 
     @Transactional
@@ -121,9 +113,5 @@ public class RoomServiceImpl implements RoomService {
                     updateBinStatusWithoutBinCount("TRUE", List.of(nextRoomMember2.map(UserRoomInfo::getPhoneNumber).orElse("")));
                 }
         }
-//            else{
-//                long newRoomNumber = userResponse.getRoomNumber()+1l;
-//                nextRoomMember = users.stream().filter(u-> u.getRoomNumber().equals(newRoomNumber)).findFirst().get();
-//            }
     }
 }
