@@ -6,12 +6,16 @@ import com.learn.roomseervice.RoomServiceImpl;
 import com.learn.roomseervice.dto.UserManagement;
 import com.learn.roomseervice.dto.UserRoomInfo;
 import jakarta.transaction.Transactional;
+import org.junit.Assert;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,8 +27,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,26 +44,41 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public class WhatsAppWebhookControllerTest {
 
-    List<Map<String, Object>> testData =  new ArrayList<>();
-    List<UserRoomInfo> userRoomDetailsList =  new ArrayList<>();;
+    static List<Map<String, Object>> testData =  new ArrayList<>();
+    static List <UserRoomInfo> userRoomDetailsList =  new ArrayList<>();;
+    static List<UserRoomInfo> requestData =  new ArrayList<>();
 
-    @BeforeEach
-    public void setup(){
-        roomDao.deleteAll();
+    @Autowired
+    RoomDao roomDao;
+
+    @InjectMocks
+    RoomServiceImpl roomService;
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @BeforeAll
+    public static void setup(){
+        //roomDao.deleteAll();
         testData = loadTestData();
     }
 
-    private List<Map<String, Object>> loadTestData() {
+    private static List<Map<String, Object>> loadTestData() {
         List<UserManagement> users = new ArrayList<>();
 
+        userRoomDetailsList.add(new UserRoomInfo(1L, "Bhakti", "918828173732", 2L, 0, "False", "False"));
+        userRoomDetailsList.add(new UserRoomInfo(6L, "Varsha", "919880623282", 3L, 1, "False", "TRUE"));
+        userRoomDetailsList.add(new UserRoomInfo(5L, "Krupa", "919742561999", 3L, 0, "False", "False"));
+        userRoomDetailsList.add(new UserRoomInfo(2L, "Asmita", "918898346696", 2L, 0, "FALSE", "False"));
+        userRoomDetailsList.add(new UserRoomInfo(3L, "Shreyas", "918655537642", 1L, 0, "FALSE", "False"));
+        userRoomDetailsList.add(new UserRoomInfo(4L, "Atharva", "919503443228", 1L, 0, "FALSE", "False"));
 
-
-        userRoomDetailsList.add(new UserRoomInfo(1L, "Bhakti", "918828173732", 1L, 0, "FALSE", "FALSE"));
-        userRoomDetailsList.add(new UserRoomInfo(6L, "Varsha", "919880623282", 3L, 1, "FALSE", "TRUE"));
-        userRoomDetailsList.add(new UserRoomInfo(5L, "Krupa", "919742561999", 3L, 0, "FALSE", "FALSE"));
-        userRoomDetailsList.add(new UserRoomInfo(2L, "Asmita", "918898346696", 1L, 0, "FALSE", "FALSE"));
-        userRoomDetailsList.add(new UserRoomInfo(3L, "Shreyash", "918655537642", 2L, 0, "FALSE", "FALSE"));
-        userRoomDetailsList.add(new UserRoomInfo(4L, "Athrav", "919503443228", 2L, 0, "FALSE", "FALSE"));
+        requestData.add(new UserRoomInfo(1L, "Bhakti", "918828173732", 2L, 0, "False", "YES"));
+        requestData.add(new UserRoomInfo(6L, "Varsha", "919880623282", 3L, 1, "False", "YES"));
+        requestData.add(new UserRoomInfo(5L, "Krupa", "919742561999", 3L, 0, "False", "YES"));
+        requestData.add(new UserRoomInfo(2L, "Asmita", "918898346696", 2L, 0, "FALSE", "YES"));
+        requestData.add(new UserRoomInfo(3L, "Shreyas", "918655537642", 1L, 0, "FALSE", "YES"));
+        requestData.add(new UserRoomInfo(4L, "Atharva", "919503443228", 1L, 0, "FALSE", "YES"));
 
         List<Map<String, Object>> roomInfoList = new ArrayList<>();
         for(UserRoomInfo userRoomInfo : userRoomDetailsList){
@@ -130,14 +152,7 @@ public class WhatsAppWebhookControllerTest {
         return map;
     }
 
-    @Autowired
-    RoomDao roomDao;
 
-    @InjectMocks
-    RoomServiceImpl roomService;
-
-    @Autowired
-    MockMvc mockMvc;
 
 //    @BeforeEach
 //    void setup() {
@@ -153,6 +168,56 @@ public class WhatsAppWebhookControllerTest {
 
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(getRequest(userRoomInfo));
+        // Turn Varsha - she said yes (assuimg the bin stauts 1), now update the bin status for her to False and bin count to 0;
+        int i =1;
+        for(UserRoomInfo userRoomInfo2 : requestData){
+            int roomNo = i;
+            roomDao.updateBinStatus("yes",userRoomDetailsList.stream().filter(u->u.getRoomNumber() == roomNo).map(UserRoomInfo::getPhoneNumber).collect(Collectors.toList()),);
+            i++;
+        }
+
+
+
+        mockMvc.perform(post("/webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk());
+
+        Long newRoomNumber = userRoomInfo.getRoomNumber()== 3 ? 1L: userRoomInfo.getRoomNumber();
+        //UserRoomInfo expectedUserInfo = userRoomDetailsList.stream().filter(user-> Objects.equals(user.getRoomNumber(), newRoomNumber)).skip(1).findFirst().orElse(new UserRoomInfo());
+      //  UserRoomInfo expectedUserInfo = userRoomDetailsList.stream().filter(u->u.getBinStatus().equalsIgnoreCase("TRUE")).findFirst().get();
+        for(UserRoomInfo userRoomInfo2 : requestData){
+            when(roomService.whoTurnsIsNext(userRoomInfo2.getPhoneNumber(),userRoomInfo2.getBinStatus())).thenReturn();
+        }
+
+
+        UserRoomInfo actualUserInfo = roomDao.getUsers();
+        System.out.print("actual user : " + actualUserInfo);
+        System.out.print("expected user : " + expectedUserInfo);
+        //Assert.assertTrue(new ReflectionEquals(expectedUserInfo).matches(actualUserInfo));
+
+        assertThat(actualUserInfo)
+                .usingRecursiveComparison().comparingOnlyFields("username")
+                .isEqualTo(expectedUserInfo);
+
+        userRoomDetailsList.stream().filter(u->u.getBinStatus().equalsIgnoreCase("TRUE")).forEach(u->{
+            u.setBinStatus("FALSE");
+        });
+        userRoomDetailsList.stream().filter(u->actualUserInfo.getUsername().equalsIgnoreCase(u.getUsername())).forEach(u->{
+            u.setBinStatus("TRUE");
+        });
+
+        System.out.print(" new userRoomDetailsList : " + userRoomDetailsList);
+    }
+
+
+    @RepeatedTest(1)
+    public void testReceiveWebhookAPI2() throws Exception {
+
+        UserRoomInfo userRoomInfo = userRoomDetailsList.stream().filter(user -> user.getBinStatus().equalsIgnoreCase("TRUE")).findFirst().orElse(new UserRoomInfo());
+
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(getRequest(userRoomInfo));
 
         mockMvc.perform(post("/webhook")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -161,8 +226,27 @@ public class WhatsAppWebhookControllerTest {
 
         Long newRoomNumber = userRoomInfo.getRoomNumber()== 3 ? 1L: userRoomInfo.getRoomNumber();
 
-        UserRoomInfo expectedUserInfo = userRoomDetailsList.stream().filter(user-> Objects.equals(user.getRoomNumber(), newRoomNumber)).findFirst().orElse(new UserRoomInfo());
-        UserRoomInfo actualUserInfo =
+        UserRoomInfo expectedUserInfo = userRoomDetailsList.stream().filter(user-> Objects.equals(user.getRoomNumber(), newRoomNumber)).skip(1).findFirst().orElse(new UserRoomInfo());
+        UserRoomInfo actualUserInfo = roomDao.getUsers().stream().filter(u->u.getBinStatus().equalsIgnoreCase("TRUE")).findFirst().get();
+        System.out.print("actual user : " + actualUserInfo);
+        System.out.print("expected user : " + expectedUserInfo);
+        //Assert.assertTrue(new ReflectionEquals(expectedUserInfo).matches(actualUserInfo));
+
+
+        assertThat(actualUserInfo)
+                .usingRecursiveComparison().comparingOnlyFields("username")
+                .isEqualTo(expectedUserInfo);
+
+        userRoomDetailsList.stream().filter(u->u.getBinStatus().equalsIgnoreCase("TRUE")).forEach(u->{
+            u.setBinStatus("FALSE");
+        });
+        userRoomDetailsList.stream().filter(u->actualUserInfo.getUsername().equalsIgnoreCase(u.getUsername())).forEach(u->{
+            u.setBinStatus("TRUE");
+        });
+
+        System.out.print(" new userRoomDetailsList : " + userRoomDetailsList);
+
+
     }
 
 
